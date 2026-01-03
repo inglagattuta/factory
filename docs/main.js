@@ -48,6 +48,7 @@ function createMap(cfg) {
     state.map.push({
       type: cells[i],
       revealed: false,
+      flagged: false,   // 🚩 NUOVO
       bombs: 0,
       food: 0
     });
@@ -106,13 +107,29 @@ function render() {
     const div = document.createElement("div");
     div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
 
+    // 🚩 BANDIERA
+    if (cell.flagged && !cell.revealed) {
+      div.textContent = "🚩";
+    }
+
+    // CELLA RIVELATA
     if (cell.revealed) {
       if (cell.type === "bomb") div.textContent = "💣";
       else if (cell.type === "food") div.textContent = "🍎";
       else div.textContent = `${cell.bombs}-${cell.food}`;
     }
 
+    // CLICK SINISTRO
     div.onclick = () => reveal(i);
+
+    // CLICK DESTRO → BANDIERA
+    div.oncontextmenu = (e) => {
+      e.preventDefault();
+      if (cell.revealed || state.gameOver) return;
+      cell.flagged = !cell.flagged;
+      render();
+    };
+
     mapEl.appendChild(div);
   });
 }
@@ -128,8 +145,18 @@ function reveal(i) {
 
   const cell = state.map[i];
   if (cell.revealed) return;
+  if (cell.flagged) return; // ❌ BLOCCO SE BANDIERA
 
-  cell.revealed = true;
+  // AUTO-REVEAL stile campo minato
+  if (
+    cell.type === "empty" &&
+    cell.bombs === 0 &&
+    cell.food === 0
+  ) {
+    autoReveal(i);
+  } else {
+    cell.revealed = true;
+  }
 
   if (cell.type === "bomb") {
     state.population--;
@@ -164,11 +191,11 @@ function autoReveal(index) {
     const cell = state.map[i];
 
     if (cell.revealed) continue;
+    if (cell.flagged) continue;
     if (cell.type === "bomb") continue;
 
     cell.revealed = true;
 
-    // Se è una cella completamente vuota, espandi
     if (cell.bombs === 0 && cell.food === 0) {
       const x = i % SIZE;
       const y = Math.floor(i / SIZE);
@@ -193,5 +220,6 @@ function log(msg) {
   logEl.textContent += msg + "\n";
   logEl.scrollTop = logEl.scrollHeight;
 }
+
 // Rendi startGame visibile all'HTML
 window.startGame = startGame;
