@@ -1,16 +1,22 @@
-export function explore(gameState, x, y, rng) {
-  const tile = gameState.map[y][x];
-  if (!tile || tile.discovered) return;
+export function applyAction(gameState, action, rng) {
+  switch (action) {
+    case "GATHER":
+      gameState.resources.food += 2;
+      break;
 
-  gameState.resources.food -= 1;
-  tile.discovered = true;
-  gameState.stats.exploredTiles++;
+    case "BUILD":
+      if (gameState.resources.gold >= 2) {
+        gameState.resources.gold -= 2;
+        gameState.resources.stability += 1;
+      }
+      break;
 
-  const r = rng();
-  if (r < 0.2) tile.type = "FIELD";
-  else if (r < 0.4) tile.type = "MINE";
-  else if (r < 0.55) tile.type = "VILLAGE";
-  else if (r < 0.7) tile.type = "RUINS";
-  else if (r < 0.85) tile.type = "ENEMY";
-  else tile.type = "EMPTY";
+    case "EXPLORE":
+      if (rng() < 0.5) {
+        gameState.resources.food += 2;
+      } else {
+        gameState.resources.stability -= 1;
+      }
+      break;
+  }
 }
