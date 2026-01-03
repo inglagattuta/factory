@@ -9,12 +9,8 @@ const FOOD = 5;
 // GAME STATE
 // ===============================
 const state = {
-  turn: 0,
-  resources: {
-    food: 5,
-    stability: 5,
-    population: 3
-  },
+  population: 3,
+  foodLeft: FOOD,
   gameOver: false,
   map: [],
   player: { x: 2, y: 2 }
@@ -38,12 +34,13 @@ function log(text) {
 // ===============================
 // MAP
 // ===============================
-function createEmptyCell() {
+function createCell() {
   return {
     bomb: false,
     food: false,
     revealed: false,
-    danger: 0
+    adjBombs: 0,
+    adjFood: 0
   };
 }
 
@@ -51,7 +48,7 @@ function createMap() {
   for (let y = 0; y < SIZE; y++) {
     state.map[y] = [];
     for (let x = 0; x < SIZE; x++) {
-      state.map[y][x] = createEmptyCell();
+      state.map[y][x] = createCell();
     }
   }
 
@@ -61,9 +58,10 @@ function createMap() {
   // start sicuro
   const { x, y } = state.player;
   state.map[y][x].bomb = false;
+  state.map[y][x].food = false;
 
-  calculateDanger();
-  revealArea(x, y);
+  calculateAdjacents();
+  reveal(x, y);
 }
 
 function placeRandom(type, count) {
@@ -81,12 +79,13 @@ function placeRandom(type, count) {
 }
 
 // ===============================
-// DANGER CALCULATION
+// ADJACENT COUNTS
 // ===============================
-function calculateDanger() {
+function calculateAdjacents() {
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      let count = 0;
+      let bombs = 0;
+      let food = 0;
 
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
@@ -96,60 +95,47 @@ function calculateDanger() {
           const ny = y + dy;
 
           if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
-            if (state.map[ny][nx].bomb) count++;
+            if (state.map[ny][nx].bomb) bombs++;
+            if (state.map[ny][nx].food) food++;
           }
         }
       }
 
-      state.map[y][x].danger = count;
+      state.map[y][x].adjBombs = bombs;
+      state.map[y][x].adjFood = food;
     }
   }
 }
 
 // ===============================
-// REVEAL (FLOOD FILL)
+// REVEAL
 // ===============================
-function revealArea(x, y) {
-  const stack = [{ x, y }];
+function reveal(x, y) {
+  const cell = state.map[y][x];
+  if (cell.revealed || state.gameOver) return;
 
-  while (stack.length > 0) {
-    const { x, y } = stack.pop();
-    const cell = state.map[y][x];
+  cell.revealed = true;
 
-    if (cell.revealed) continue;
+  if (cell.food) {
+    state.population++;
+    state.foodLeft--;
+    cell.food = false;
+    log("🌾 Cibo trovato! Popolazione +1");
+  }
 
-    cell.revealed = true;
+  if (cell.bomb) {
+    state.population--;
+    log("💣 Bomba! Popolazione -1");
+  }
 
-    if (cell.food) {
-      state.resources.food += 2;
-      log("🌾 Trovato cibo (+2)");
-      cell.food = false;
-    }
+  if (state.population <= 0) {
+    state.gameOver = true;
+    log("💀 GAME OVER");
+  }
 
-    if (cell.bomb) {
-      state.resources.stability -= 2;
-      log("💣 Zona pericolosa! (-2 stabilità)");
-      continue;
-    }
-
-    // espansione solo se danger === 0
-    if (cell.danger === 0) {
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-
-          const nx = x + dx;
-          const ny = y + dy;
-
-          if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
-            const neighbor = state.map[ny][nx];
-            if (!neighbor.revealed && !neighbor.bomb) {
-              stack.push({ x: nx, y: ny });
-            }
-          }
-        }
-      }
-    }
+  if (state.foodLeft === 0) {
+    state.gameOver = true;
+    log("🏆 VITTORIA! Tutto il cibo raccolto");
   }
 }
 
@@ -167,22 +153,8 @@ function move(dx, dy) {
   state.player.x = nx;
   state.player.y = ny;
 
-  state.turn++;
-  state.resources.food -= state.resources.population;
-
-  revealArea(nx, ny);
+  reveal(nx, ny);
   render();
-
-  if (state.resources.food < 0) {
-    state.resources.population--;
-    state.resources.food = 0;
-    log("⚠ Fame! Popolazione diminuita");
-  }
-
-  if (state.resources.population <= 0 || state.resources.stability <= 0) {
-    state.gameOver = true;
-    log("💀 GAME OVER");
-  }
 }
 
 // ===============================
@@ -190,29 +162,47 @@ function move(dx, dy) {
 // ===============================
 function render() {
   statusEl.textContent =
-    `Turno ${state.turn} | Food: ${state.resources.food} | ` +
-    `Stability: ${state.resources.stability} | Pop: ${state.resources.population}`;
+    `Popolazione: ${state.population} | Cibo rimasto: ${state.foodLeft}`;
 
   mapEl.innerHTML = "";
 
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      const cellEl = document.createElement("div");
-      cellEl.className = "cell";
+      const el = document.createElement("div");
+      el.className = "cell";
 
       const cell = state.map[y][x];
 
       if (state.player.x === x && state.player.y === y) {
-        cellEl.textContent = "👑";
+        el.textContent = "🧭";
       } else if (!cell.revealed) {
-        cellEl.textContent = "?";
-        cellEl.classList.add("hidden");
+        el.textContent = "?";
+        el.classList.add("hidden");
       } else if (cell.bomb) {
-        cellEl.textContent = "💣";
-      } else if (cell.danger > 0) {
-        cellEl.textContent = cell.danger;
+        el.textContent = "💣";
       } else {
-        cellEl.textContent = ".";
+        el.textContent = `${cell.adjBombs}-${cell.adjFood}`;
       }
 
-      mapEl.appendChild(ce
+      mapEl.appendChild(el);
+    }
+  }
+}
+
+// ===============================
+// INPUT
+// ===============================
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp") move(0, -1);
+  if (e.key === "ArrowDown") move(0, 1);
+  if (e.key === "ArrowLeft") move(-1, 0);
+  if (e.key === "ArrowRight") move(1, 0);
+});
+
+// ===============================
+// INIT
+// ===============================
+createMap();
+render();
+log("🏁 Inizio partita");
+log("Indizi: BOMBE-CIBO");
