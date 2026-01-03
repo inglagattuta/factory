@@ -1,221 +1,154 @@
-// ===============================
-// DIFFICULTY SETTINGS
-// ===============================
-const DIFFICULTY = "normal"; // "easy" | "normal" | "hard"
+const mapEl = document.getElementById("map");
+const logEl = document.getElementById("log");
+const statusEl = document.getElementById("status");
 
 const SETTINGS = {
-  easy:    { size: 5, bombs: 4, food: 6 },
-  normal:  { size: 6, bombs: 7, food: 7 },
-  hard:    { size: 7, bombs: 12, food: 8 }
+  easy:   { size: 5, bombs: 4, food: 5 },
+  normal: { size: 6, bombs: 7, food: 6 },
+  hard:   { size: 7, bombs: 12, food: 7 }
 };
 
-const CONFIG = SETTINGS[DIFFICULTY];
-const SIZE = CONFIG.size;
+let SIZE;
+let state = {};
 
-// ===============================
-// GAME STATE
-// ===============================
-const state = {
-  population: 3,
-  foodLeft: CONFIG.food,
-  gameOver: false,
-  map: [],
-  player: {
-    x: Math.floor(SIZE / 2),
-    y: Math.floor(SIZE / 2)
-  }
-};
+function startGame(level) {
+  const cfg = SETTINGS[level];
+  SIZE = cfg.size;
 
-// ===============================
-// UI
-// ===============================
-const statusEl = document.getElementById("status");
-const logEl = document.getElementById("log");
-const mapEl = document.getElementById("map");
-
-// ===============================
-// LOG
-// ===============================
-function log(text) {
-  logEl.textContent += text + "\n";
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-// ===============================
-// MAP
-// ===============================
-function createCell() {
-  return {
-    bomb: false,
-    food: false,
-    revealed: false,
-    adjBombs: 0,
-    adjFood: 0
+  state = {
+    population: 3,
+    foodLeft: cfg.food,
+    gameOver: false,
+    map: []
   };
+
+  mapEl.innerHTML = "";
+  mapEl.style.gridTemplateColumns = `repeat(${SIZE}, 40px)`;
+  logEl.textContent = "";
+
+  createMap(cfg);
+  renderStatus();
+  log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
-function createMap() {
-  for (let y = 0; y < SIZE; y++) {
-    state.map[y] = [];
-    for (let x = 0; x < SIZE; x++) {
-      state.map[y][x] = createCell();
-    }
+function createMap(cfg) {
+  const total = SIZE * SIZE;
+  const cells = Array(total).fill("empty");
+
+  placeRandom(cells, "bomb", cfg.bombs);
+  placeRandom(cells, "food", cfg.food);
+
+  for (let i = 0; i < total; i++) {
+    state.map.push({
+      type: cells[i],
+      revealed: false,
+      bombs: 0,
+      food: 0
+    });
   }
 
-  placeRandom("bomb", CONFIG.bombs);
-  placeRandom("food", CONFIG.food);
-
-  // start sempre sicuro
-  const { x, y } = state.player;
-  state.map[y][x].bomb = false;
-  state.map[y][x].food = false;
-
-  calculateAdjacents();
-  reveal(x, y);
+  calculateHints();
 }
 
-function placeRandom(type, count) {
+function placeRandom(arr, type, count) {
   let placed = 0;
   while (placed < count) {
-    const x = Math.floor(Math.random() * SIZE);
-    const y = Math.floor(Math.random() * SIZE);
-    const cell = state.map[y][x];
-
-    if (!cell[type] && !(x === state.player.x && y === state.player.y)) {
-      cell[type] = true;
+    const i = Math.floor(Math.random() * arr.length);
+    if (arr[i] === "empty") {
+      arr[i] = type;
       placed++;
     }
   }
 }
 
-// ===============================
-// ADJACENT COUNTS
-// ===============================
-function calculateAdjacents() {
+function calculateHints() {
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      let bombs = 0;
-      let food = 0;
-
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-
-          const nx = x + dx;
-          const ny = y + dy;
-
-          if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
-            if (state.map[ny][nx].bomb) bombs++;
-            if (state.map[ny][nx].food) food++;
-          }
-        }
-      }
-
-      state.map[y][x].adjBombs = bombs;
-      state.map[y][x].adjFood = food;
+      const idx = y * SIZE + x;
+      neighbors(x, y).forEach(n => {
+        if (state.map[n].type === "bomb") state.map[idx].bombs++;
+        if (state.map[n].type === "food") state.map[idx].food++;
+      });
     }
   }
 }
 
-// ===============================
-// REVEAL
-// ===============================
-function reveal(x, y) {
-  const cell = state.map[y][x];
-  if (cell.revealed || state.gameOver) return;
+function neighbors(x, y) {
+  const res = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
+        res.push(ny * SIZE + nx);
+      }
+    }
+  }
+  return res;
+}
+
+function render() {
+  mapEl.innerHTML = "";
+  state.map.forEach((cell, i) => {
+    const div = document.createElement("div");
+    div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
+
+    if (cell.revealed) {
+      if (cell.type === "bomb") div.textContent = "💣";
+      else if (cell.type === "food") div.textContent = "🍎";
+      else div.textContent = `${cell.bombs}-${cell.food}`;
+    }
+
+    div.onclick = () => reveal(i);
+    mapEl.appendChild(div);
+  });
+}
+
+function reveal(i) {
+  if (state.gameOver) return;
+  const cell = state.map[i];
+  if (cell.revealed) return;
 
   cell.revealed = true;
 
-  if (cell.food) {
-    state.population++;
-    state.foodLeft--;
-    cell.food = false;
-    log("🌾 Cibo trovato! Popolazione +1");
+  if (cell.type === "bomb") {
+    state.population--;
+    log("💥 Bomba! Popolazione -1");
   }
 
-  if (cell.bomb) {
-    state.population--;
-    log("💣 Bomba! Popolazione -1");
+  if (cell.type === "food") {
+    state.population++;
+    state.foodLeft--;
+    log("🍎 Cibo trovato! Popolazione +1");
   }
 
   if (state.population <= 0) {
-    state.gameOver = true;
-    log("💀 GAME OVER");
+    endGame("💀 Popolazione azzerata. Hai perso.");
+    return;
   }
 
   if (state.foodLeft === 0) {
-    state.gameOver = true;
-    log("🏆 VITTORIA! Tutto il cibo raccolto");
+    endGame("🏆 Hai raccolto tutto il cibo! Vittoria!");
+    return;
   }
-}
 
-// ===============================
-// MOVEMENT
-// ===============================
-function move(dx, dy) {
-  if (state.gameOver) return;
-
-  const nx = state.player.x + dx;
-  const ny = state.player.y + dy;
-
-  if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) return;
-
-  state.player.x = nx;
-  state.player.y = ny;
-
-  reveal(nx, ny);
+  renderStatus();
   render();
 }
 
-// ===============================
-// RENDER
-// ===============================
-function render() {
+function renderStatus() {
   statusEl.textContent =
-    `Difficoltà: ${DIFFICULTY.toUpperCase()} | ` +
-    `Popolazione: ${state.population} | ` +
-    `Cibo rimasto: ${state.foodLeft}`;
-
-  mapEl.innerHTML = "";
-
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      const el = document.createElement("div");
-      el.className = "cell";
-
-      const cell = state.map[y][x];
-
-      if (state.player.x === x && state.player.y === y) {
-        el.textContent = "🧭";
-      } else if (!cell.revealed) {
-        el.textContent = "?";
-        el.classList.add("hidden");
-      } else if (cell.bomb) {
-        el.textContent = "💣";
-      } else {
-        el.textContent = `${cell.adjBombs}-${cell.adjFood}`;
-      }
-
-      mapEl.appendChild(el);
-    }
-  }
+    `👥 Popolazione: ${state.population} | 🍎 Cibo rimasto: ${state.foodLeft}`;
 }
 
-// ===============================
-// INPUT
-// ===============================
-window.addEventListener("keydown", e => {
-  if (e.key === "ArrowUp") move(0, -1);
-  if (e.key === "ArrowDown") move(0, 1);
-  if (e.key === "ArrowLeft") move(-1, 0);
-  if (e.key === "ArrowRight") move(1, 0);
-});
+function endGame(msg) {
+  state.gameOver = true;
+  render();
+  log(msg);
+}
 
-// ===============================
-// INIT
-// ===============================
-createMap();
-render();
-log("🏁 Inizio partita");
-log("Indizi: BOMBE-CIBO");
-log(`Livello: ${DIFFICULTY.toUpperCase()}`);
+function log(msg) {
+  logEl.textContent += msg + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+}
