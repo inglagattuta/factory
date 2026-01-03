@@ -156,6 +156,32 @@ function reveal(i) {
   render();
 }
 
+function autoReveal(index) {
+  const stack = [index];
+
+  while (stack.length > 0) {
+    const i = stack.pop();
+    const cell = state.map[i];
+
+    if (cell.revealed) continue;
+    if (cell.type === "bomb") continue;
+
+    cell.revealed = true;
+
+    // Se è una cella completamente vuota, espandi
+    if (cell.bombs === 0 && cell.food === 0) {
+      const x = i % SIZE;
+      const y = Math.floor(i / SIZE);
+
+      neighbors(x, y).forEach(n => {
+        if (!state.map[n].revealed) {
+          stack.push(n);
+        }
+      });
+    }
+  }
+}
+
 function endGame(msg) {
   state.gameOver = true;
   render();
