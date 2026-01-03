@@ -26,10 +26,12 @@ button {
 
 #map {
   display: grid;
-  grid-template-columns: repeat(5, 40px);
+  grid-template-columns: repeat(var(--size), 40px);
+  grid-auto-rows: 40px;
   gap: 4px;
   margin: 10px 0;
 }
+
 
 .cell {
   width: 40px;
