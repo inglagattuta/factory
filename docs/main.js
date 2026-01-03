@@ -147,4 +147,23 @@ function reveal(i) {
     return;
   }
 
-  if (stat
+  if (state.foodLeft === 0) {
+    endGame("🏆 Hai raccolto tutto il cibo! Vittoria!");
+    return;
+  }
+
+  renderStatus();
+  render();
+}
+
+function endGame(msg) {
+  state.gameOver = true;
+  render();
+  log(msg);
+}
+
+// ================== LOG ==================
+function log(msg) {
+  logEl.textContent += msg + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+}
