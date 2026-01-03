@@ -8,9 +8,12 @@ const SETTINGS = {
   hard:   { size: 7, bombs: 12, food: 7 }
 };
 
-let SIZE;
-let state = {};
+let SIZE = 0;
+let state = null;
 
+/* ======================
+   AVVIO GIOCO
+====================== */
 function startGame(level) {
   const cfg = SETTINGS[level];
   SIZE = cfg.size;
@@ -28,26 +31,22 @@ function startGame(level) {
 
   createMap(cfg);
   renderStatus();
-  render(); // 👈 🔥 QUESTA RIGA MANCAVA
+  render();
+
   log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
-
-  mapEl.innerHTML = "";
-  mapEl.style.gridTemplateColumns = `repeat(${SIZE}, 40px)`;
-  logEl.textContent = "";
-
-  createMap(cfg);
-  renderStatus();
-  log(`🎮 Livello ${level.toUpperCase()} avviato`);
-}
-
+/* ======================
+   MAPPA
+====================== */
 function createMap(cfg) {
   const total = SIZE * SIZE;
   const cells = Array(total).fill("empty");
 
   placeRandom(cells, "bomb", cfg.bombs);
   placeRandom(cells, "food", cfg.food);
+
+  state.map = [];
 
   for (let i = 0; i < total; i++) {
     state.map.push({
@@ -76,9 +75,11 @@ function calculateHints() {
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const idx = y * SIZE + x;
+      const cell = state.map[idx];
+
       neighbors(x, y).forEach(n => {
-        if (state.map[n].type === "bomb") state.map[idx].bombs++;
-        if (state.map[n].type === "food") state.map[idx].food++;
+        if (state.map[n].type === "bomb") cell.bombs++;
+        if (state.map[n].type === "food") cell.food++;
       });
     }
   }
@@ -99,8 +100,12 @@ function neighbors(x, y) {
   return res;
 }
 
+/* ======================
+   RENDER
+====================== */
 function render() {
   mapEl.innerHTML = "";
+
   state.map.forEach((cell, i) => {
     const div = document.createElement("div");
     div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
@@ -116,8 +121,17 @@ function render() {
   });
 }
 
+function renderStatus() {
+  statusEl.textContent =
+    `👥 Popolazione: ${state.population} | 🍎 Cibo rimasto: ${state.foodLeft}`;
+}
+
+/* ======================
+   GAMEPLAY
+====================== */
 function reveal(i) {
   if (state.gameOver) return;
+
   const cell = state.map[i];
   if (cell.revealed) return;
 
@@ -148,17 +162,15 @@ function reveal(i) {
   render();
 }
 
-function renderStatus() {
-  statusEl.textContent =
-    `👥 Popolazione: ${state.population} | 🍎 Cibo rimasto: ${state.foodLeft}`;
-}
-
 function endGame(msg) {
   state.gameOver = true;
   render();
   log(msg);
 }
 
+/* ======================
+   LOG
+====================== */
 function log(msg) {
   logEl.textContent += msg + "\n";
   logEl.scrollTop = logEl.scrollHeight;
