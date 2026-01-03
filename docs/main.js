@@ -3,17 +3,15 @@ const logEl = document.getElementById("log");
 const statusEl = document.getElementById("status");
 
 const SETTINGS = {
-  easy:   { size: 5, bombs: 4, food: 5 },
+  easy: { size: 5, bombs: 4, food: 5 },
   normal: { size: 6, bombs: 7, food: 6 },
-  hard:   { size: 7, bombs: 12, food: 7 }
+  hard: { size: 7, bombs: 12, food: 7 }
 };
 
 let SIZE = 0;
 let state = null;
 
-/* ======================
-   AVVIO GIOCO
-====================== */
+// ===== AVVIO =====
 function startGame(level) {
   const cfg = SETTINGS[level];
   SIZE = cfg.size;
@@ -36,9 +34,7 @@ function startGame(level) {
   log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
-/* ======================
-   MAPPA
-====================== */
+// ===== MAPPA =====
 function createMap(cfg) {
   const total = SIZE * SIZE;
   const cells = Array(total).fill("empty");
@@ -100,78 +96,9 @@ function neighbors(x, y) {
   return res;
 }
 
-/* ======================
-   RENDER
-====================== */
+// ===== RENDER =====
 function render() {
   mapEl.innerHTML = "";
 
   state.map.forEach((cell, i) => {
-    const div = document.createElement("div");
-    div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
-
-    if (cell.revealed) {
-      if (cell.type === "bomb") div.textContent = "💣";
-      else if (cell.type === "food") div.textContent = "🍎";
-      else div.textContent = `${cell.bombs}-${cell.food}`;
-    }
-
-    div.onclick = () => reveal(i);
-    mapEl.appendChild(div);
-  });
-}
-
-function renderStatus() {
-  statusEl.textContent =
-    `👥 Popolazione: ${state.population} | 🍎 Cibo rimasto: ${state.foodLeft}`;
-}
-
-/* ======================
-   GAMEPLAY
-====================== */
-function reveal(i) {
-  if (state.gameOver) return;
-
-  const cell = state.map[i];
-  if (cell.revealed) return;
-
-  cell.revealed = true;
-
-  if (cell.type === "bomb") {
-    state.population--;
-    log("💥 Bomba! Popolazione -1");
-  }
-
-  if (cell.type === "food") {
-    state.population++;
-    state.foodLeft--;
-    log("🍎 Cibo trovato! Popolazione +1");
-  }
-
-  if (state.population <= 0) {
-    endGame("💀 Popolazione azzerata. Hai perso.");
-    return;
-  }
-
-  if (state.foodLeft === 0) {
-    endGame("🏆 Hai raccolto tutto il cibo! Vittoria!");
-    return;
-  }
-
-  renderStatus();
-  render();
-}
-
-function endGame(msg) {
-  state.gameOver = true;
-  render();
-  log(msg);
-}
-
-/* ======================
-   LOG
-====================== */
-function log(msg) {
-  logEl.textContent += msg + "\n";
-  logEl.scrollTop = logEl.scrollHeight;
-}
+    const div
