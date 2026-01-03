@@ -1,4 +1,11 @@
-import events from "../data/events.json" assert { type: "json" };
+import fs from "fs";
+
+const events = JSON.parse(
+  fs.readFileSync(
+    new URL("../data/events.json", import.meta.url),
+    "utf-8"
+  )
+);
 
 export function pickEvent(gameState, rng) {
   let pool = [];
@@ -10,8 +17,10 @@ export function pickEvent(gameState, rng) {
       weight *= 3;
     }
 
-    for (let i = 0; i < weight; i++) {
-      pool.push(e);
+    if (weight > 0) {
+      for (let i = 0; i < weight; i++) {
+        pool.push(e);
+      }
     }
   }
 
