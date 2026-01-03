@@ -11,7 +11,8 @@ const state = {
   },
   gameOver: false,
   map: [],
-  visible: []
+  visible: [],
+  player: { x: 2, y: 2 }
 };
 
 const SIZE = 5;
@@ -48,8 +49,21 @@ function createMap() {
     }
   }
 
-  // centro visibile
-  state.visible[2][2] = true;
+  revealAroundPlayer();
+}
+
+function revealAroundPlayer() {
+  const { x, y } = state.player;
+
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
+        state.visible[ny][nx] = true;
+      }
+    }
+  }
 }
 
 function renderMap() {
@@ -59,7 +73,10 @@ function renderMap() {
       const cell = document.createElement("div");
       cell.className = "cell";
 
-      if (!state.visible[y][x]) {
+      if (state.player.x === x && state.player.y === y) {
+        cell.textContent = "👑";
+        cell.style.background = "#333";
+      } else if (!state.visible[y][x]) {
         cell.classList.add("hidden");
         cell.textContent = "?";
       } else {
@@ -85,32 +102,38 @@ function applyAction(action) {
   }
 
   if (action === "EXPLORE") {
-    revealRandomCell();
+    resolveTile();
   }
 }
 
-function revealRandomCell() {
-  const hidden = [];
+function resolveTile() {
+  const { x, y } = state.player;
+  const tile = state.map[y][x];
 
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      if (!state.visible[y][x]) hidden.push({ x, y });
-    }
-  }
+  log(`🧭 Esplori la casella: ${tile}`);
 
-  if (hidden.length === 0) {
-    log("🗺 Tutta la mappa è esplorata");
-    return;
-  }
+  if (tile === "🌾") state.resources.food += 2;
+  if (tile === "⚔") state.resources.stability -= 1;
 
-  const cell = hidden[Math.floor(Math.random() * hidden.length)];
-  state.visible[cell.y][cell.x] = true;
+  state.map[y][x] = ".";
+}
 
-  const content = state.map[cell.y][cell.x];
-  log(`🧭 Esplorato: ${content}`);
+// ===============================
+// MOVEMENT
+// ===============================
+function move(dx, dy) {
+  const nx = state.player.x + dx;
+  const ny = state.player.y + dy;
 
-  if (content === "🌾") state.resources.food += 2;
-  if (content === "⚔") state.resources.stability -= 1;
+  if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) return;
+
+  state.player.x = nx;
+  state.player.y = ny;
+
+  revealAroundPlayer();
+  log(`🚶 Spostato a (${nx},${ny})`);
+  nextTurn();
+  render();
 }
 
 // ===============================
@@ -147,7 +170,7 @@ function render() {
 }
 
 // ===============================
-// EVENTS
+// UI EVENTS
 // ===============================
 buttons.forEach(btn => {
   btn.addEventListener("click", () => {
@@ -155,15 +178,22 @@ buttons.forEach(btn => {
 
     const action = btn.dataset.action;
     log(`➡ Azione: ${action}`);
-
     applyAction(action);
     nextTurn();
     render();
 
-    if (state.gameOver) {
-      log("💀 GAME OVER");
-    }
+    if (state.gameOver) log("💀 GAME OVER");
   });
+});
+
+// MOVIMENTO CON FRECCE
+window.addEventListener("keydown", e => {
+  if (state.gameOver) return;
+
+  if (e.key === "ArrowUp") move(0, -1);
+  if (e.key === "ArrowDown") move(0, 1);
+  if (e.key === "ArrowLeft") move(-1, 0);
+  if (e.key === "ArrowRight") move(1, 0);
 });
 
 // ===============================
@@ -172,3 +202,4 @@ buttons.forEach(btn => {
 createMap();
 render();
 log("🏁 Inizio partita");
+log("Usa ↑ ↓ ← → per muoverti");
