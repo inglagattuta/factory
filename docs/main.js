@@ -11,7 +11,7 @@ const SETTINGS = {
 let SIZE = 0;
 let state = null;
 
-// ===== AVVIO =====
+// ================== START GAME ==================
 function startGame(level) {
   const cfg = SETTINGS[level];
   SIZE = cfg.size;
@@ -34,7 +34,7 @@ function startGame(level) {
   log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
-// ===== MAPPA =====
+// ================== MAP ==================
 function createMap(cfg) {
   const total = SIZE * SIZE;
   const cells = Array(total).fill("empty");
@@ -86,8 +86,10 @@ function neighbors(x, y) {
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue;
+
       const nx = x + dx;
       const ny = y + dy;
+
       if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
         res.push(ny * SIZE + nx);
       }
@@ -96,9 +98,53 @@ function neighbors(x, y) {
   return res;
 }
 
-// ===== RENDER =====
+// ================== RENDER ==================
 function render() {
   mapEl.innerHTML = "";
 
   state.map.forEach((cell, i) => {
-    const div
+    const div = document.createElement("div");
+    div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
+
+    if (cell.revealed) {
+      if (cell.type === "bomb") div.textContent = "💣";
+      else if (cell.type === "food") div.textContent = "🍎";
+      else div.textContent = `${cell.bombs}-${cell.food}`;
+    }
+
+    div.onclick = () => reveal(i);
+    mapEl.appendChild(div);
+  });
+}
+
+function renderStatus() {
+  statusEl.textContent =
+    `👥 Popolazione: ${state.population} | 🍎 Cibo rimasto: ${state.foodLeft}`;
+}
+
+// ================== GAMEPLAY ==================
+function reveal(i) {
+  if (state.gameOver) return;
+
+  const cell = state.map[i];
+  if (cell.revealed) return;
+
+  cell.revealed = true;
+
+  if (cell.type === "bomb") {
+    state.population--;
+    log("💥 Bomba! Popolazione -1");
+  }
+
+  if (cell.type === "food") {
+    state.population++;
+    state.foodLeft--;
+    log("🍎 Cibo trovato! Popolazione +1");
+  }
+
+  if (state.population <= 0) {
+    endGame("💀 Popolazione azzerata. Hai perso.");
+    return;
+  }
+
+  if (stat
