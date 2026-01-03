@@ -167,3 +167,5 @@ function log(msg) {
   logEl.textContent += msg + "\n";
   logEl.scrollTop = logEl.scrollHeight;
 }
+// Rendi startGame visibile all'HTML
+window.startGame = startGame;
