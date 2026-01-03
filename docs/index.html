@@ -2,25 +2,23 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>MicroDominion</title>
+  <title>Campo Minato Strategico</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>🏰 MicroDominion</h1>
 
-  <div id="status"></div>
+  <h1>💣 Campo Minato Strategico</h1>
 
-  <h3>Mappa</h3>
-  <div id="map"></div>
-
-  <div id="actions">
-    <button data-action="GATHER">🌾 Raccogli cibo</button>
-    <button data-action="BUILD">🏗 Costruisci</button>
-    <button data-action="EXPLORE">🧭 Esplora</button>
+  <div id="menu">
+    <button onclick="startGame('easy')">Facile</button>
+    <button onclick="startGame('normal')">Normale</button>
+    <button onclick="startGame('hard')">Difficile</button>
   </div>
 
-  <pre id="log"></pre>
+  <div id="status"></div>
+  <div id="map"></div>
+  <div id="log"></div>
 
-  <script type="module" src="main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
