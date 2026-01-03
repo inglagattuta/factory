@@ -3,10 +3,12 @@ const logEl = document.getElementById("log");
 const statusEl = document.getElementById("status");
 
 const SETTINGS = {
-  easy: { size: 5, bombs: 4, food: 5 },
-  normal: { size: 6, bombs: 7, food: 6 },
-  hard: { size: 7, bombs: 12, food: 7 }
+  easy:    { size: 5,  bombs: 4,  food: 5 },
+  normal:  { size: 6,  bombs: 7,  food: 6 },
+  hard:    { size: 7,  bombs: 12, food: 7 },
+  extreme: { size: 10, bombs: 30, food: 8 } // 🔥 MAPPA GRANDE
 };
+
 
 let SIZE = 0;
 let state = null;
