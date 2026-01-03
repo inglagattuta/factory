@@ -1,0 +1,14 @@
+[
+  {
+    "id": "minor_famine",
+    "weight": 2,
+    "condition": "LOW_FOOD",
+    "effect": "FOOD_MINUS"
+  },
+  {
+    "id": "unrest",
+    "weight": 1,
+    "condition": "NONE",
+    "effect": "STABILITY_MINUS"
+  }
+]
