@@ -28,6 +28,17 @@ function startGame(level) {
 
   createMap(cfg);
   renderStatus();
+  render(); // 👈 🔥 QUESTA RIGA MANCAVA
+  log(`🎮 Livello ${level.toUpperCase()} avviato`);
+}
+
+
+  mapEl.innerHTML = "";
+  mapEl.style.gridTemplateColumns = `repeat(${SIZE}, 40px)`;
+  logEl.textContent = "";
+
+  createMap(cfg);
+  renderStatus();
   log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
