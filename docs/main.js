@@ -14,7 +14,13 @@ let state = null;
 // ================== START GAME ==================
 function startGame(level) {
   const cfg = SETTINGS[level];
+  if (!cfg) {
+    alert("Livello non valido: " + level);
+    return;
+  }
+
   SIZE = cfg.size;
+
 
   state = {
     population: 3,
