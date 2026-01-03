@@ -1,19 +1,29 @@
 // ===============================
-// CONFIG
+// DIFFICULTY SETTINGS
 // ===============================
-const SIZE = 5;
-const BOMBS = 5;
-const FOOD = 5;
+const DIFFICULTY = "normal"; // "easy" | "normal" | "hard"
+
+const SETTINGS = {
+  easy:    { size: 5, bombs: 4, food: 6 },
+  normal:  { size: 6, bombs: 7, food: 7 },
+  hard:    { size: 7, bombs: 12, food: 8 }
+};
+
+const CONFIG = SETTINGS[DIFFICULTY];
+const SIZE = CONFIG.size;
 
 // ===============================
 // GAME STATE
 // ===============================
 const state = {
   population: 3,
-  foodLeft: FOOD,
+  foodLeft: CONFIG.food,
   gameOver: false,
   map: [],
-  player: { x: 2, y: 2 }
+  player: {
+    x: Math.floor(SIZE / 2),
+    y: Math.floor(SIZE / 2)
+  }
 };
 
 // ===============================
@@ -52,10 +62,10 @@ function createMap() {
     }
   }
 
-  placeRandom("bomb", BOMBS);
-  placeRandom("food", FOOD);
+  placeRandom("bomb", CONFIG.bombs);
+  placeRandom("food", CONFIG.food);
 
-  // start sicuro
+  // start sempre sicuro
   const { x, y } = state.player;
   state.map[y][x].bomb = false;
   state.map[y][x].food = false;
@@ -162,7 +172,9 @@ function move(dx, dy) {
 // ===============================
 function render() {
   statusEl.textContent =
-    `Popolazione: ${state.population} | Cibo rimasto: ${state.foodLeft}`;
+    `Difficoltà: ${DIFFICULTY.toUpperCase()} | ` +
+    `Popolazione: ${state.population} | ` +
+    `Cibo rimasto: ${state.foodLeft}`;
 
   mapEl.innerHTML = "";
 
@@ -206,3 +218,4 @@ createMap();
 render();
 log("🏁 Inizio partita");
 log("Indizi: BOMBE-CIBO");
+log(`Livello: ${DIFFICULTY.toUpperCase()}`);
