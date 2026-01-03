@@ -24,7 +24,9 @@ function startGame(level) {
   };
 
   mapEl.innerHTML = "";
-  mapEl.style.gridTemplateColumns = `repeat(${SIZE}, 40px)`;
+ const cellSize = SIZE >= 9 ? 32 : 40;
+mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
+
   logEl.textContent = "";
 
   createMap(cfg);
