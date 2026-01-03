@@ -1,10 +1,13 @@
 // ===============================
-// GAME STATE
+// CONFIG
 // ===============================
 const SIZE = 5;
 const BOMBS = 5;
 const FOOD = 5;
 
+// ===============================
+// GAME STATE
+// ===============================
 const state = {
   turn: 0,
   resources: {
@@ -23,7 +26,6 @@ const state = {
 const statusEl = document.getElementById("status");
 const logEl = document.getElementById("log");
 const mapEl = document.getElementById("map");
-const buttons = document.querySelectorAll("button");
 
 // ===============================
 // LOG
@@ -34,18 +36,19 @@ function log(text) {
 }
 
 // ===============================
-// MAP CREATION (MINESWEEPER STYLE)
+// MAP
 // ===============================
 function createEmptyCell() {
   return {
     bomb: false,
     food: false,
-    revealed: false
+    revealed: false,
+    danger: 0
   };
 }
 
 function createMap() {
-  // crea griglia vuota
+  // griglia vuota
   for (let y = 0; y < SIZE; y++) {
     state.map[y] = [];
     for (let x = 0; x < SIZE; x++) {
@@ -56,11 +59,12 @@ function createMap() {
   placeRandom("bomb", BOMBS);
   placeRandom("food", FOOD);
 
-  // cella iniziale sempre sicura
-  const start = state.player;
-  state.map[start.y][start.x].bomb = false;
+  // start sempre sicuro
+  const { x, y } = state.player;
+  state.map[y][x].bomb = false;
 
-  reveal(start.x, start.y);
+  calculateDanger();
+  reveal(x, y);
 }
 
 function placeRandom(type, count) {
@@ -68,8 +72,8 @@ function placeRandom(type, count) {
   while (placed < count) {
     const x = Math.floor(Math.random() * SIZE);
     const y = Math.floor(Math.random() * SIZE);
-
     const cell = state.map[y][x];
+
     if (!cell[type] && !(x === state.player.x && y === state.player.y)) {
       cell[type] = true;
       placed++;
@@ -77,6 +81,35 @@ function placeRandom(type, count) {
   }
 }
 
+// ===============================
+// DANGER CALCULATION
+// ===============================
+function calculateDanger() {
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      let count = 0;
+
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+
+          const nx = x + dx;
+          const ny = y + dy;
+
+          if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
+            if (state.map[ny][nx].bomb) count++;
+          }
+        }
+      }
+
+      state.map[y][x].danger = count;
+    }
+  }
+}
+
+// ===============================
+// REVEAL
+// ===============================
 function reveal(x, y) {
   const cell = state.map[y][x];
   if (cell.revealed) return;
@@ -99,11 +132,12 @@ function reveal(x, y) {
 // MOVEMENT
 // ===============================
 function move(dx, dy) {
+  if (state.gameOver) return;
+
   const nx = state.player.x + dx;
   const ny = state.player.y + dy;
 
   if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) return;
-  if (state.gameOver) return;
 
   state.player.x = nx;
   state.player.y = ny;
@@ -131,10 +165,8 @@ function move(dx, dy) {
 // ===============================
 function render() {
   statusEl.textContent =
-    `Turno ${state.turn} | ` +
-    `Food: ${state.resources.food} | ` +
-    `Stability: ${state.resources.stability} | ` +
-    `Pop: ${state.resources.population}`;
+    `Turno ${state.turn} | Food: ${state.resources.food} | ` +
+    `Stability: ${state.resources.stability} | Pop: ${state.resources.population}`;
 
   mapEl.innerHTML = "";
 
@@ -143,13 +175,17 @@ function render() {
       const cell = document.createElement("div");
       cell.className = "cell";
 
+      const data = state.map[y][x];
+
       if (state.player.x === x && state.player.y === y) {
         cell.textContent = "👑";
-      } else if (!state.map[y][x].revealed) {
+      } else if (!data.revealed) {
         cell.textContent = "?";
         cell.classList.add("hidden");
-      } else if (state.map[y][x].bomb) {
+      } else if (data.bomb) {
         cell.textContent = "💣";
+      } else if (data.danger > 0) {
+        cell.textContent = data.danger;
       } else {
         cell.textContent = ".";
       }
@@ -175,4 +211,5 @@ window.addEventListener("keydown", e => {
 createMap();
 render();
 log("🏁 Inizio partita");
+log("Numeri = bombe adiacenti");
 log("Usa ↑ ↓ ← → per muoverti");
