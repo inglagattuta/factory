@@ -13,6 +13,7 @@ h1 {
   margin-bottom: 8px;
 }
 
+/* ================= MENU ================= */
 #menu {
   display: flex;
   flex-wrap: wrap;
@@ -34,36 +35,47 @@ button:active {
   transform: scale(0.96);
 }
 
+/* ================= STATUS ================= */
 #status {
   margin: 8px 0;
   font-size: 14px;
 }
 
+/* ================= MAP ================= */
 #map {
   display: grid;
   justify-content: center;
-  margin: 10px auto;
+  margin: 16px auto;
   gap: 4px;
+  user-select: none;
   touch-action: none;
 }
 
+/* ================= CELL ================= */
 .cell {
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
   user-select: none;
 }
 
-.hidden {
-  background: #020617;
+/* CELLA CHIUSA */
+.cell.hidden {
+  background: #2c2c2c;
+  color: transparent; /* 🔥 NASCONDE NUMERI */
 }
 
-.revealed {
-  background: #1e293b;
+/* CELLA APERTA */
+.cell.revealed {
+  background: #e0e0e0;
+  color: #111;        /* 🔥 NUMERI VISIBILI */
 }
 
+/* ================= LOG ================= */
 #log {
   margin-top: 10px;
   background: #020617;
@@ -72,33 +84,17 @@ button:active {
   height: 110px;
   overflow-y: auto;
   font-size: 12px;
+  text-align: left;
 }
 
-/* 📱 MOBILE SMALL */
+/* ================= MOBILE ================= */
 @media (max-width: 480px) {
   .cell {
     font-size: 13px;
   }
-}
 
-#map {
-  margin: 16px auto;
-  user-select: none;
-}
-
-.cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.cell.hidden {
-  background: #2c2c2c;
-}
-
-.cell.revealed {
-  background: #e0e0e0;
+  button {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
 }
