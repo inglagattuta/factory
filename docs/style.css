@@ -58,29 +58,26 @@ button:active {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: 8px;
   cursor: pointer;
   user-select: none;
+
+  /* 🔥 DIMENSIONI DEFAULT (DESKTOP) */
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
 }
 
 /* CELLA CHIUSA */
 .cell.hidden {
-  background: #020617;
-  color: #e5e7eb;          /* 🔥 SERVE PER LE 🚩 */
+  background: #2c2c2c;
+  color: transparent;
 }
 
 /* CELLA APERTA */
 .cell.revealed {
-  background: #1e293b;
-  color: #ffffff;         /* numeri + emoji visibili */
-}
-
-/* CELLA FLAGGATA */
-.cell.flagged {
-  background: #1f2937 !important;
-  color: #facc15 !important;  /* 🚩 gialla ben visibile */
-  font-size: 20px;
+  background: #e0e0e0;
+  color: #111;
 }
 
 /* ================= LOG ================= */
@@ -97,12 +94,38 @@ button:active {
 
 /* ================= MOBILE ================= */
 @media (max-width: 480px) {
+
+  body {
+    padding: 8px;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+
+  #map {
+    gap: 3px;
+  }
+
   .cell {
-    font-size: 13px;
+    /* 🔥 CELLE PIÙ GRANDI SU MOBILE */
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    border-radius: 10px;
   }
 
   button {
     font-size: 13px;
     padding: 9px 12px;
+  }
+}
+
+/* ================= MOBILE MAPPE GRANDI ================= */
+@media (max-width: 480px) and (min-width: 350px) {
+  .cell {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
   }
 }
