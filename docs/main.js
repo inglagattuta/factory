@@ -3,9 +3,6 @@ const mapEl = document.getElementById("map");
 const logEl = document.getElementById("log");
 const statusEl = document.getElementById("status");
 
-// 🔥 blocca menu browser (necessario per right click)
-mapEl.addEventListener("contextmenu", e => e.preventDefault());
-
 // ================== SETTINGS ==================
 const SETTINGS = {
   easy:    { size: 5,  bombs: 4,  food: 5 },
@@ -39,7 +36,10 @@ function startGame(level) {
   arcadeMode = false;
 
   const cfg = SETTINGS[level];
-  if (!cfg) return alert("Livello non valido");
+  if (!cfg) {
+    alert("Livello non valido: " + level);
+    return;
+  }
 
   SIZE = cfg.size;
 
@@ -55,11 +55,9 @@ function startGame(level) {
   createMap(cfg);
   renderStatus();
   render();
-
-  log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
-// ================== START ARCADE ==================
+// ================== ARCADE ==================
 function startArcade() {
   arcadeMode = true;
   arcadeLevel = 1;
@@ -69,8 +67,8 @@ function startArcade() {
 
 function startArcadeLevel() {
   const cfg = getArcadeConfig(arcadeLevel);
-  SIZE = cfg.size;
 
+  SIZE = cfg.size;
   state = {
     population: arcadeStartPopulation,
     foodLeft: cfg.food,
@@ -83,8 +81,6 @@ function startArcadeLevel() {
   createMap(cfg);
   renderStatus();
   render();
-
-  log(`🕹️ ARCADE – Livello ${arcadeLevel}`);
 }
 
 // ================== GRID ==================
@@ -93,11 +89,7 @@ function setupGrid() {
   mapEl.style.display = "grid";
   mapEl.style.justifyContent = "center";
 
-  const cellSize =
-    SIZE >= 14 ? 22 :
-    SIZE >= 10 ? 26 :
-    SIZE >= 8  ? 30 : 36;
-
+  const cellSize = SIZE >= 12 ? 24 : SIZE >= 9 ? 28 : 36;
   mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
   mapEl.style.gridAutoRows = `${cellSize}px`;
 }
@@ -150,8 +142,9 @@ function neighbors(x, y) {
     for (let dx = -1; dx <= 1; dx++) {
       if (!dx && !dy) continue;
       const nx = x + dx, ny = y + dy;
-      if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE)
+      if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
         res.push(ny * SIZE + nx);
+      }
     }
   }
   return res;
@@ -163,43 +156,38 @@ function render() {
 
   state.map.forEach((cell, i) => {
     const div = document.createElement("div");
-    div.className = `cell ${cell.revealed ? "revealed" : "hidden"}`;
+    div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
 
-    if (cell.flagged && !cell.revealed) div.textContent = "🚩";
+    // 🚩 BANDIERINA — PRIORITÀ ASSOLUTA
+    if (cell.flagged && !cell.revealed) {
+      div.textContent = "🚩";
+      div.classList.add("flagged");
+    }
+
+    // CONTENUTO CELLA
     if (cell.revealed) {
       if (cell.type === "bomb") div.textContent = "💣";
       else if (cell.type === "food") div.textContent = "🍎";
-      else div.textContent = `${cell.bombs}-${cell.food}`;
+      else if (cell.bombs || cell.food)
+        div.textContent = `${cell.bombs}-${cell.food}`;
     }
 
-    // click normale
-    div.onclick = () => reveal(i);
+    // CLICK SINISTRO
+    div.addEventListener("click", () => reveal(i));
 
-    // right click PC
+    // CLICK DESTRO / LONG PRESS
     div.addEventListener("contextmenu", e => {
       e.preventDefault();
-      if (!cell.revealed && !state.gameOver) {
-        cell.flagged = !cell.flagged;
-        render();
-      }
+      if (cell.revealed || state.gameOver) return;
+      cell.flagged = !cell.flagged;
+      render();
     });
-
-    // long press mobile
-    let pressTimer;
-    div.addEventListener("touchstart", () => {
-      pressTimer = setTimeout(() => {
-        if (!cell.revealed && !state.gameOver) {
-          cell.flagged = !cell.flagged;
-          render();
-        }
-      }, 450);
-    });
-    div.addEventListener("touchend", () => clearTimeout(pressTimer));
 
     mapEl.appendChild(div);
   });
 }
 
+// ================== STATUS ==================
 function renderStatus() {
   statusEl.textContent =
     `👥 ${state.population} | 🍎 ${state.foodLeft}` +
@@ -213,9 +201,7 @@ function reveal(i) {
   const cell = state.map[i];
   if (cell.revealed || cell.flagged) return;
 
-  if (cell.type === "empty" && cell.bombs === 0 && cell.food === 0)
-    autoReveal(i);
-  else cell.revealed = true;
+  cell.revealed = true;
 
   if (cell.type === "bomb") state.population--;
   if (cell.type === "food") {
@@ -231,8 +217,10 @@ function reveal(i) {
   if (state.foodLeft === 0) {
     if (arcadeMode) {
       arcadeLevel++;
-      setTimeout(startArcadeLevel, 700);
-    } else endGame("🏆 Vittoria!");
+      setTimeout(startArcadeLevel, 600);
+    } else {
+      endGame("🏆 Vittoria!");
+    }
     return;
   }
 
@@ -240,20 +228,7 @@ function reveal(i) {
   render();
 }
 
-function autoReveal(start) {
-  const stack = [start];
-  while (stack.length) {
-    const i = stack.pop();
-    const c = state.map[i];
-    if (c.revealed || c.flagged || c.type === "bomb") continue;
-    c.revealed = true;
-    if (c.bombs === 0 && c.food === 0) {
-      neighbors(i % SIZE, Math.floor(i / SIZE)).forEach(n => stack.push(n));
-    }
-  }
-}
-
-// ================== END GAME ==================
+// ================== END ==================
 function endGame(msg) {
   state.gameOver = true;
   render();
@@ -263,17 +238,14 @@ function endGame(msg) {
 
   setTimeout(() => {
     arcadeStartPopulation--;
-
     if (arcadeStartPopulation <= 0) {
-      alert("💀 Fine Arcade!\nDevi ricominciare.");
+      alert("💀 Arcade finito");
       startArcade();
       return;
     }
-
-    if (confirm(`Hai perso!\nContinui?\nPopolazione iniziale → ${arcadeStartPopulation}`))
-      startArcadeLevel();
+    if (confirm("Vuoi continuare?")) startArcadeLevel();
     else startArcade();
-  }, 300);
+  }, 400);
 }
 
 // ================== LOG ==================
