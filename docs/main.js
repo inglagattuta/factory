@@ -78,6 +78,8 @@ function startArcadeLevel() {
   const cfg = getArcadeConfig(arcadeLevel);
 
   SIZE = cfg.size;
+
+  state.population = 3;      // 🔥 RESET POPOLAZIONE
   state.foodLeft = cfg.food;
   state.gameOver = false;
   state.map = [];
@@ -91,6 +93,7 @@ function startArcadeLevel() {
 
   log(`🕹️ ARCADE – Livello ${arcadeLevel}`);
 }
+
 
 // ================== GRID ==================
 function setupGrid() {
