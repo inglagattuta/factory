@@ -17,6 +17,7 @@ let state = null;
 
 let arcadeMode = false;
 let arcadeLevel = 1;
+let arcadeStartPopulation = 3; // ⭐ popolazione iniziale arcade
 
 // ================== ARCADE CONFIG ==================
 function getArcadeConfig(level) {
@@ -63,13 +64,7 @@ function startGame(level) {
 function startArcade() {
   arcadeMode = true;
   arcadeLevel = 1;
-
-  state = {
-    population: 3,
-    foodLeft: 0,
-    gameOver: false,
-    map: []
-  };
+  arcadeStartPopulation = 3;
 
   startArcadeLevel();
 }
@@ -79,10 +74,12 @@ function startArcadeLevel() {
 
   SIZE = cfg.size;
 
-  state.population = 3;      // 🔥 RESET POPOLAZIONE
-  state.foodLeft = cfg.food;
-  state.gameOver = false;
-  state.map = [];
+  state = {
+    population: arcadeStartPopulation,
+    foodLeft: cfg.food,
+    gameOver: false,
+    map: []
+  };
 
   setupGrid();
   logEl.textContent = "";
@@ -94,11 +91,10 @@ function startArcadeLevel() {
   log(`🕹️ ARCADE – Livello ${arcadeLevel}`);
 }
 
-
 // ================== GRID ==================
 function setupGrid() {
   mapEl.innerHTML = "";
-  const cellSize = SIZE >= 10 ? 28 : 36;
+  const cellSize = SIZE >= 12 ? 24 : SIZE >= 9 ? 28 : 36;
   mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
 }
 
@@ -264,10 +260,35 @@ function autoReveal(index) {
   }
 }
 
+// ================== END GAME ==================
 function endGame(msg) {
   state.gameOver = true;
   render();
   log(msg);
+
+  if (!arcadeMode) return;
+
+  setTimeout(() => {
+    arcadeStartPopulation--;
+
+    if (arcadeStartPopulation <= 0) {
+      alert("💀 Fine Arcade!\nPopolazione iniziale esaurita.\nDevi ricominciare da capo.");
+      startArcade();
+      return;
+    }
+
+    const retry = confirm(
+      `💀 Hai perso al livello ${arcadeLevel}.\n\n` +
+      `Vuoi continuare?\n` +
+      `👉 Popolazione iniziale scenderà a ${arcadeStartPopulation}`
+    );
+
+    if (retry) {
+      startArcadeLevel();
+    } else {
+      startArcade();
+    }
+  }, 300);
 }
 
 // ================== LOG ==================
