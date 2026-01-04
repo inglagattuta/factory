@@ -1,17 +1,17 @@
-/* ================= BASE ================= */
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: #0f172a;
   color: #e5e7eb;
   margin: 0;
-  padding: 12px;
+  padding: 10px;
   text-align: center;
   touch-action: manipulation;
 }
 
+/* ================= TITLE ================= */
 h1 {
   font-size: 1.2rem;
-  margin-bottom: 8px;
+  margin: 6px 0 10px;
 }
 
 /* ================= MENU ================= */
@@ -20,11 +20,11 @@ h1 {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 button {
-  padding: 10px 14px;
+  padding: 9px 13px;
   font-size: 14px;
   border-radius: 10px;
   border: none;
@@ -38,7 +38,7 @@ button:active {
 
 /* ================= STATUS ================= */
 #status {
-  margin: 8px 0;
+  margin: 6px 0;
   font-size: 14px;
 }
 
@@ -46,7 +46,7 @@ button:active {
 #map {
   display: grid;
   justify-content: center;
-  margin: 16px auto;
+  margin: 12px auto;
   gap: 4px;
   user-select: none;
   touch-action: none;
@@ -58,82 +58,55 @@ button:active {
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  border-radius: 6px;
   cursor: pointer;
   user-select: none;
-
-  width: 36px;
-  height: 36px;
-  font-size: 16px;
-
-  border-radius: 6px;
-  border: 1px solid #334155;
-  box-sizing: border-box;
+  line-height: 1;
 }
 
-/* ================= CELLA CHIUSA ================= */
+/* CELLA CHIUSA */
 .cell.hidden {
   background: #2c2c2c;
-  color: #2c2c2c;          /* 🔥 stesso colore sfondo → numeri invisibili */
-  border-color: #475569;
+  color: #f8fafc; /* 🚩 VISIBILE */
 }
 
-/* 🚩 BANDIERINA VISIBILE SEMPRE */
-.cell.hidden:has(:not()) {
-  color: inherit;
-}
-
-/* fallback sicuro */
-.cell.hidden {
-  caret-color: transparent;
-}
-
-/* ================= CELLA APERTA ================= */
+/* CELLA APERTA */
 .cell.revealed {
   background: #e5e7eb;
-  color: #111;
-  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 /* ================= LOG ================= */
 #log {
-  margin-top: 10px;
+  margin: 12px auto 0;
+  max-width: 420px;
   background: #020617;
-  border-radius: 8px;
-  padding: 8px;
-  height: 110px;
+  border-radius: 10px;
+  padding: 6px 8px;
+  height: 70px;                /* 🔥 RIDOTTA */
   overflow-y: auto;
-  font-size: 12px;
+  font-size: 11px;             /* 🔥 PIÙ COMPATTO */
   text-align: left;
 }
 
 /* ================= MOBILE ================= */
 @media (max-width: 480px) {
 
-  body {
-    padding: 8px;
-  }
-
   #map {
-    gap: 3px;
+    gap: 3px;                  /* 🔥 divisioni visibili */
   }
 
   .cell {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-  }
-}
-
-/* ================= MOBILE MAPPE GRANDI ================= */
-@media (max-width: 480px) and (min-width: 320px) {
-
-  #map {
-    gap: 2px;
+    font-size: 15px;           /* 🔥 emoji e numeri leggibili */
   }
 
-  .cell {
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
+  #log {
+    height: 60px;
+    font-size: 10.5px;
+  }
+
+  button {
+    font-size: 13px;
+    padding: 8px 11px;
   }
 }
