@@ -36,10 +36,7 @@ function startGame(level) {
   arcadeMode = false;
 
   const cfg = SETTINGS[level];
-  if (!cfg) {
-    alert("Livello non valido: " + level);
-    return;
-  }
+  if (!cfg) return alert("Livello non valido");
 
   SIZE = cfg.size;
 
@@ -52,12 +49,15 @@ function startGame(level) {
 
   setupGrid();
   logEl.textContent = "";
+
   createMap(cfg);
   renderStatus();
   render();
+
+  log(`🎮 Livello ${level.toUpperCase()} avviato`);
 }
 
-// ================== ARCADE ==================
+// ================== START ARCADE ==================
 function startArcade() {
   arcadeMode = true;
   arcadeLevel = 1;
@@ -69,6 +69,7 @@ function startArcadeLevel() {
   const cfg = getArcadeConfig(arcadeLevel);
 
   SIZE = cfg.size;
+
   state = {
     population: arcadeStartPopulation,
     foodLeft: cfg.food,
@@ -78,9 +79,12 @@ function startArcadeLevel() {
 
   setupGrid();
   logEl.textContent = "";
+
   createMap(cfg);
   renderStatus();
   render();
+
+  log(`🕹️ ARCADE – Livello ${arcadeLevel}`);
 }
 
 // ================== GRID ==================
@@ -102,13 +106,17 @@ function createMap(cfg) {
   placeRandom(cells, "bomb", cfg.bombs);
   placeRandom(cells, "food", cfg.food);
 
-  state.map = cells.map(type => ({
-    type,
-    revealed: false,
-    flagged: false,
-    bombs: 0,
-    food: 0
-  }));
+  state.map = [];
+
+  for (let i = 0; i < total; i++) {
+    state.map.push({
+      type: cells[i],
+      revealed: false,
+      flagged: false,
+      bombs: 0,
+      food: 0
+    });
+  }
 
   calculateHints();
 }
@@ -128,9 +136,11 @@ function calculateHints() {
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const idx = y * SIZE + x;
+      const cell = state.map[idx];
+
       neighbors(x, y).forEach(n => {
-        if (state.map[n].type === "bomb") state.map[idx].bombs++;
-        if (state.map[n].type === "food") state.map[idx].food++;
+        if (state.map[n].type === "bomb") cell.bombs++;
+        if (state.map[n].type === "food") cell.food++;
       });
     }
   }
@@ -140,8 +150,9 @@ function neighbors(x, y) {
   const res = [];
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
-      if (!dx && !dy) continue;
-      const nx = x + dx, ny = y + dy;
+      if (dx === 0 && dy === 0) continue;
+      const nx = x + dx;
+      const ny = y + dy;
       if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
         res.push(ny * SIZE + nx);
       }
@@ -158,36 +169,30 @@ function render() {
     const div = document.createElement("div");
     div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
 
-    // 🚩 BANDIERINA — PRIORITÀ ASSOLUTA
     if (cell.flagged && !cell.revealed) {
       div.textContent = "🚩";
       div.classList.add("flagged");
     }
 
-    // CONTENUTO CELLA
     if (cell.revealed) {
       if (cell.type === "bomb") div.textContent = "💣";
       else if (cell.type === "food") div.textContent = "🍎";
-      else if (cell.bombs || cell.food)
-        div.textContent = `${cell.bombs}-${cell.food}`;
+      else div.textContent = `${cell.bombs}-${cell.food}`;
     }
 
-    // CLICK SINISTRO
-    div.addEventListener("click", () => reveal(i));
+    div.onclick = () => reveal(i);
 
-    // CLICK DESTRO / LONG PRESS
-    div.addEventListener("contextmenu", e => {
+    div.oncontextmenu = (e) => {
       e.preventDefault();
       if (cell.revealed || state.gameOver) return;
       cell.flagged = !cell.flagged;
       render();
-    });
+    };
 
     mapEl.appendChild(div);
   });
 }
 
-// ================== STATUS ==================
 function renderStatus() {
   statusEl.textContent =
     `👥 ${state.population} | 🍎 ${state.foodLeft}` +
@@ -201,51 +206,96 @@ function reveal(i) {
   const cell = state.map[i];
   if (cell.revealed || cell.flagged) return;
 
-  cell.revealed = true;
+  if (cell.type === "empty" && cell.bombs === 0 && cell.food === 0) {
+    autoReveal(i);
+  } else {
+    cell.revealed = true;
+  }
 
-  if (cell.type === "bomb") state.population--;
+  if (cell.type === "bomb") {
+    state.population--;
+    log("💥 Bomba! Popolazione -1");
+  }
+
   if (cell.type === "food") {
     state.population++;
     state.foodLeft--;
+    log("🍎 Cibo trovato! Popolazione +1");
   }
 
   if (state.population <= 0) {
-    endGame("💀 Popolazione azzerata");
+    endGame("💀 Popolazione azzerata. Hai perso.");
     return;
   }
 
   if (state.foodLeft === 0) {
     if (arcadeMode) {
+      revealAll();
+      log(`✅ Livello ${arcadeLevel} completato`);
       arcadeLevel++;
-      setTimeout(startArcadeLevel, 600);
+      setTimeout(startArcadeLevel, 1200);
     } else {
-      endGame("🏆 Vittoria!");
+      revealAll();
+      endGame("🏆 Hai raccolto tutto il cibo! Vittoria!");
     }
-    return;
   }
 
   renderStatus();
   render();
 }
 
-// ================== END ==================
+function autoReveal(index) {
+  const stack = [index];
+
+  while (stack.length) {
+    const i = stack.pop();
+    const cell = state.map[i];
+
+    if (cell.revealed || cell.flagged || cell.type === "bomb") continue;
+    cell.revealed = true;
+
+    if (cell.bombs === 0 && cell.food === 0) {
+      const x = i % SIZE;
+      const y = Math.floor(i / SIZE);
+      neighbors(x, y).forEach(n => stack.push(n));
+    }
+  }
+}
+
+// ================== RIVELA TUTTA LA MAPPA ==================
+function revealAll() {
+  state.map.forEach(cell => {
+    cell.revealed = true;
+    cell.flagged = false;
+  });
+  render();
+}
+
+// ================== END GAME ==================
 function endGame(msg) {
   state.gameOver = true;
-  render();
+  revealAll();
   log(msg);
 
   if (!arcadeMode) return;
 
   setTimeout(() => {
     arcadeStartPopulation--;
+
     if (arcadeStartPopulation <= 0) {
-      alert("💀 Arcade finito");
+      alert("💀 Fine Arcade!\nPopolazione iniziale esaurita.");
       startArcade();
       return;
     }
-    if (confirm("Vuoi continuare?")) startArcadeLevel();
-    else startArcade();
-  }, 400);
+
+    const retry = confirm(
+      `💀 Hai perso al livello ${arcadeLevel}\n\n` +
+      `Vuoi continuare?\n` +
+      `👉 Popolazione iniziale: ${arcadeStartPopulation}`
+    );
+
+    retry ? startArcadeLevel() : startArcade();
+  }, 800);
 }
 
 // ================== LOG ==================
