@@ -1,20 +1,39 @@
+// ================== DOM ==================
 const mapEl = document.getElementById("map");
 const logEl = document.getElementById("log");
 const statusEl = document.getElementById("status");
 
+// ================== SETTINGS ==================
 const SETTINGS = {
   easy:    { size: 5,  bombs: 4,  food: 5 },
   normal:  { size: 6,  bombs: 7,  food: 6 },
   hard:    { size: 7,  bombs: 12, food: 7 },
-  extreme: { size: 10, bombs: 30, food: 8 } // 🔥 MAPPA GRANDE
+  extreme: { size: 10, bombs: 30, food: 8 }
 };
 
-
+// ================== STATE ==================
 let SIZE = 0;
 let state = null;
 
+let arcadeMode = false;
+let arcadeLevel = 1;
+
+// ================== ARCADE CONFIG ==================
+function getArcadeConfig(level) {
+  const size = Math.min(4 + Math.floor(level / 5), 25);
+  const total = size * size;
+
+  return {
+    size,
+    bombs: Math.floor(total * 0.18),
+    food: Math.max(3, Math.floor(total * 0.08))
+  };
+}
+
 // ================== START GAME ==================
 function startGame(level) {
+  arcadeMode = false;
+
   const cfg = SETTINGS[level];
   if (!cfg) {
     alert("Livello non valido: " + level);
@@ -23,7 +42,6 @@ function startGame(level) {
 
   SIZE = cfg.size;
 
-
   state = {
     population: 3,
     foodLeft: cfg.food,
@@ -31,10 +49,7 @@ function startGame(level) {
     map: []
   };
 
-  mapEl.innerHTML = "";
- const cellSize = SIZE >= 9 ? 32 : 40;
-mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
-
+  setupGrid();
   logEl.textContent = "";
 
   createMap(cfg);
@@ -42,6 +57,46 @@ mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
   render();
 
   log(`🎮 Livello ${level.toUpperCase()} avviato`);
+}
+
+// ================== START ARCADE ==================
+function startArcade() {
+  arcadeMode = true;
+  arcadeLevel = 1;
+
+  state = {
+    population: 3,
+    foodLeft: 0,
+    gameOver: false,
+    map: []
+  };
+
+  startArcadeLevel();
+}
+
+function startArcadeLevel() {
+  const cfg = getArcadeConfig(arcadeLevel);
+
+  SIZE = cfg.size;
+  state.foodLeft = cfg.food;
+  state.gameOver = false;
+  state.map = [];
+
+  setupGrid();
+  logEl.textContent = "";
+
+  createMap(cfg);
+  renderStatus();
+  render();
+
+  log(`🕹️ ARCADE – Livello ${arcadeLevel}`);
+}
+
+// ================== GRID ==================
+function setupGrid() {
+  mapEl.innerHTML = "";
+  const cellSize = SIZE >= 10 ? 28 : 36;
+  mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
 }
 
 // ================== MAP ==================
@@ -58,7 +113,7 @@ function createMap(cfg) {
     state.map.push({
       type: cells[i],
       revealed: false,
-      flagged: false,   // 🚩 NUOVO
+      flagged: false,
       bombs: 0,
       food: 0
     });
@@ -97,10 +152,8 @@ function neighbors(x, y) {
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue;
-
       const nx = x + dx;
       const ny = y + dy;
-
       if (nx >= 0 && ny >= 0 && nx < SIZE && ny < SIZE) {
         res.push(ny * SIZE + nx);
       }
@@ -117,22 +170,18 @@ function render() {
     const div = document.createElement("div");
     div.className = "cell " + (cell.revealed ? "revealed" : "hidden");
 
-    // 🚩 BANDIERA
     if (cell.flagged && !cell.revealed) {
       div.textContent = "🚩";
     }
 
-    // CELLA RIVELATA
     if (cell.revealed) {
       if (cell.type === "bomb") div.textContent = "💣";
       else if (cell.type === "food") div.textContent = "🍎";
       else div.textContent = `${cell.bombs}-${cell.food}`;
     }
 
-    // CLICK SINISTRO
     div.onclick = () => reveal(i);
 
-    // CLICK DESTRO → BANDIERA
     div.oncontextmenu = (e) => {
       e.preventDefault();
       if (cell.revealed || state.gameOver) return;
@@ -146,7 +195,8 @@ function render() {
 
 function renderStatus() {
   statusEl.textContent =
-    `👥 Popolazione: ${state.population} | 🍎 Cibo rimasto: ${state.foodLeft}`;
+    `👥 ${state.population} | 🍎 ${state.foodLeft}` +
+    (arcadeMode ? ` | 🕹️ Lv ${arcadeLevel}` : "");
 }
 
 // ================== GAMEPLAY ==================
@@ -154,15 +204,9 @@ function reveal(i) {
   if (state.gameOver) return;
 
   const cell = state.map[i];
-  if (cell.revealed) return;
-  if (cell.flagged) return; // ❌ BLOCCO SE BANDIERA
+  if (cell.revealed || cell.flagged) return;
 
-  // AUTO-REVEAL stile campo minato
-  if (
-    cell.type === "empty" &&
-    cell.bombs === 0 &&
-    cell.food === 0
-  ) {
+  if (cell.type === "empty" && cell.bombs === 0 && cell.food === 0) {
     autoReveal(i);
   } else {
     cell.revealed = true;
@@ -185,7 +229,13 @@ function reveal(i) {
   }
 
   if (state.foodLeft === 0) {
-    endGame("🏆 Hai raccolto tutto il cibo! Vittoria!");
+    if (arcadeMode) {
+      log(`✅ Livello ${arcadeLevel} completato`);
+      arcadeLevel++;
+      setTimeout(startArcadeLevel, 800);
+    } else {
+      endGame("🏆 Hai raccolto tutto il cibo! Vittoria!");
+    }
     return;
   }
 
@@ -196,25 +246,17 @@ function reveal(i) {
 function autoReveal(index) {
   const stack = [index];
 
-  while (stack.length > 0) {
+  while (stack.length) {
     const i = stack.pop();
     const cell = state.map[i];
 
-    if (cell.revealed) continue;
-    if (cell.flagged) continue;
-    if (cell.type === "bomb") continue;
-
+    if (cell.revealed || cell.flagged || cell.type === "bomb") continue;
     cell.revealed = true;
 
     if (cell.bombs === 0 && cell.food === 0) {
       const x = i % SIZE;
       const y = Math.floor(i / SIZE);
-
-      neighbors(x, y).forEach(n => {
-        if (!state.map[n].revealed) {
-          stack.push(n);
-        }
-      });
+      neighbors(x, y).forEach(n => stack.push(n));
     }
   }
 }
@@ -231,5 +273,6 @@ function log(msg) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-// Rendi startGame visibile all'HTML
+// ================== EXPORT ==================
 window.startGame = startGame;
+window.startArcade = startArcade;
