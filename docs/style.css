@@ -80,3 +80,25 @@ button:active {
     font-size: 13px;
   }
 }
+
+#map {
+  margin: 16px auto;
+  user-select: none;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.cell.hidden {
+  background: #2c2c2c;
+}
+
+.cell.revealed {
+  background: #e0e0e0;
+}
