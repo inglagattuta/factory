@@ -47,7 +47,7 @@ button:active {
   display: grid;
   justify-content: center;
   margin: 16px auto;
-  gap: 4px;                 /* desktop */
+  gap: 4px;
   user-select: none;
   touch-action: none;
 }
@@ -66,18 +66,28 @@ button:active {
   font-size: 16px;
 
   border-radius: 6px;
-  border: 1px solid #334155;   /* 🔥 divisione celle */
+  border: 1px solid #334155;
   box-sizing: border-box;
 }
 
-/* CELLA CHIUSA */
+/* ================= CELLA CHIUSA ================= */
 .cell.hidden {
   background: #2c2c2c;
-  color: transparent;
-  border-color: #475569;       /* 🔥 più visibile */
+  color: #2c2c2c;          /* 🔥 stesso colore sfondo → numeri invisibili */
+  border-color: #475569;
 }
 
-/* CELLA APERTA */
+/* 🚩 BANDIERINA VISIBILE SEMPRE */
+.cell.hidden:has(:not()) {
+  color: inherit;
+}
+
+/* fallback sicuro */
+.cell.hidden {
+  caret-color: transparent;
+}
+
+/* ================= CELLA APERTA ================= */
 .cell.revealed {
   background: #e5e7eb;
   color: #111;
@@ -103,33 +113,27 @@ button:active {
     padding: 8px;
   }
 
-  h1 {
-    font-size: 1.1rem;
-  }
-
   #map {
-    gap: 3px;                /* 🔥 mai zero */
+    gap: 3px;
   }
 
   .cell {
     width: 40px;
     height: 40px;
     font-size: 18px;
-    border-radius: 8px;
   }
 }
 
-/* ================= MOBILE MAPPE GRANDI (EXTREME / ARCADE) ================= */
+/* ================= MOBILE MAPPE GRANDI ================= */
 @media (max-width: 480px) and (min-width: 320px) {
 
   #map {
-    gap: 2px;                /* 🔥 minimo garantito */
+    gap: 2px;
   }
 
   .cell {
     width: 30px;
     height: 30px;
-    font-size: 14px;
-    border-radius: 5px;
+    font-size: 16px;
   }
 }
