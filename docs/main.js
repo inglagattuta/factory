@@ -94,8 +94,13 @@ function startArcadeLevel() {
 // ================== GRID ==================
 function setupGrid() {
   mapEl.innerHTML = "";
+
+  mapEl.style.display = "grid";        // 🔥 FIX CRITICO
+  mapEl.style.justifyContent = "center";
+
   const cellSize = SIZE >= 12 ? 24 : SIZE >= 9 ? 28 : 36;
   mapEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
+  mapEl.style.gridAutoRows = `${cellSize}px`;
 }
 
 // ================== MAP ==================
